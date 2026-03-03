@@ -1,9 +1,16 @@
 const fs = require('node:fs').promises;
 
 async function getChallengeData() {
-    // Fetching the data
-    let response = await fetch("https://raw.githubusercontent.com/freeCodeCamp/freeCodeCamp/refs/heads/main/curriculum/challenges/english/blocks/daily-coding-challenges-javascript/6814d8e1516e86b171929de4.md");
 
+    // Safety check for missing URL
+    if (!process.argv[2]) {
+        console.log("\nPlease provide a freeCodeCamp URL like such:\nhttps://raw.githubusercontent.com/freeCodeCamp/freeCodeCamp/refs/heads/main/curriculum/challenges/english/blocks/daily-coding-challenges-javascript/challengeId.md\nFind all challenges and their URLs here:\nhttps://github.com/freeCodeCamp/freeCodeCamp/tree/main/curriculum/challenges/english/blocks/daily-coding-challenges-javascript\n");
+
+        return;
+    }
+
+    // Fetching the data
+    let response = await fetch(process.argv[2]);
     // Putting data into text
     let markdownText = await response.text();
 
