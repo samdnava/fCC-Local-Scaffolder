@@ -1,35 +1,111 @@
-const fs = require('fs').promises;
+const fs = require('node:fs').promises;
 
 async function getChallengeData() {
-    // 1. Fetch the data
+    // Fetching the data
     let response = await fetch("https://raw.githubusercontent.com/freeCodeCamp/freeCodeCamp/refs/heads/main/curriculum/challenges/english/blocks/daily-coding-challenges-javascript/6814d8e1516e86b171929de4.md");
+
+    // Putting data into text
     let markdownText = await response.text();
 
-    // 2. Split into sections
+    // Splitting into sections
     let sections = markdownText.split("# --");
 
-    // 3. Clean the starter code
-    let cleanCode = sections[4].split("```js")[1].split("```")[0];
+    // Cleaning the starter code
+    let starterCode = sections[4].split("```js\n")[1].split("\n```")[0];
 
-    // 4. Create the HTML Template
-    let htmlTemplate = `
-<!DOCTYPE html>
+    // Cleaning the test markdown
+    let testsMarkdown = sections[2].split("hints--\n\n");
+
+    // Creating the HTML Template
+    let htmlTemplate =
+        `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Challenge 1</title>
+    <meta charset="UTF-8">
+    <title>Challenge 1</title>
 </head>
 <body>
-  <h1>Challenge 1: Vowel Balance</h1>
-  <script src="script.js"></script>
+<h1>Challenge 1: Vowel Balance</h1>
+<script src="script.js"></script>
 </body>
-</html>
-  `;
+</html>`
+    ;
 
-    // 5. Build the directory and files
+    // Creating the Test Runner Template
+    let testRunnerTemplate =
+        `const fs = require('fs').promises;
+
+async function runTests() {
+    let userCode = await fs.readFile("script.js", "utf8");
+    let testMarkdown = await fs.readFile("tests.md", "utf8");
+
+    let dirtyTests = testMarkdown.split("\`\`\`js");
+    let cleanTests = [];
+
+    for (let i = 1; i < dirtyTests.length; i++) {
+        cleanTests.push(dirtyTests[i].split("\`\`\`")[0]);
+    }
+
+    for (let i = 0; i < cleanTests.length; i++) {
+        try {
+            eval(userCode + "\\n" + cleanTests[i]);
+            console.log("✅ Passed Test: \\n" + cleanTests[i]);
+        } catch (error) {
+            console.log("❌ Failed Test: \\n" + cleanTests[i]);
+        }
+    }
+}
+
+runTests();`
+    ;
+
+    // Building the directory
     await fs.mkdir("Challenge-1", {recursive: true});
-    await fs.writeFile("Challenge-1/script.js", cleanCode);
-    await fs.writeFile("Challenge-1/index.html", htmlTemplate);
+
+    // Building files
+    let fileExists;
+    // Building script.js
+    try { // Check if file already exists
+        await fs.access("Challenge-1/script.js");
+        fileExists = true; // It succeeded, so the file is there!
+    } catch (error) {
+        fileExists = false; // It threw an error, meaning the file is missing.
+    }
+    if (!fileExists) { // if file does not exist already then write it.
+        await fs.writeFile("Challenge-1/script.js", starterCode);
+    }
+    // Building index.html
+    try {
+        await fs.access("Challenge-1/index.html");
+        fileExists = true;
+    } catch (error) {
+        fileExists = false;
+    }
+    if (!fileExists) {
+        await fs.writeFile("Challenge-1/index.html", htmlTemplate);
+    }
+
+    // Building test.md
+    try {
+        await fs.access("Challenge-1/tests.md");
+        fileExists = true;
+    } catch (error) {
+        fileExists = false;
+    }
+    if (!fileExists) {
+        await fs.writeFile("Challenge-1/tests.md", testsMarkdown);
+    }
+
+    // Building test-runner.js
+    try {
+        await fs.access("Challenge-1/test-runner.js");
+        fileExists = true;
+    } catch (error) {
+        fileExists = false;
+    }
+    if (!fileExists) {
+        await fs.writeFile("Challenge-1/test-runner.js", testRunnerTemplate);
+    }
 
     console.log("Workspace built successfully!");
 }
