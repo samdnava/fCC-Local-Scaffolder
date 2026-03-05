@@ -94,43 +94,42 @@ function parseChallengeData(markdownText) {
 
     // Creates the test-runner.js string containing the automated testing logic
     let testRunnerTemplate = `const fs = require('fs').promises;
-const assert = require('assert'); // Brings in Node's assertion library
+const assert = require('assert');
+
+// 🛠️ Polyfill Chai-specific methods so Node's assert understands freeCodeCamp's tests
+assert.isTrue = (val, msg) => assert.strictEqual(val, true, msg);
+assert.isFalse = (val, msg) => assert.strictEqual(val, false, msg);
+assert.isString = (val, msg) => assert.strictEqual(typeof val, 'string', msg);
+assert.isNumber = (val, msg) => assert.strictEqual(typeof val, 'number', msg);
+assert.isArray = (val, msg) => assert.ok(Array.isArray(val), msg);
+assert.match = (str, reg, msg) => assert.ok(reg.test(str), msg);
+assert.lengthOf = (obj, len, msg) => assert.strictEqual(obj.length, len, msg);
 
 async function runTests() {
     let userCode = await fs.readFile("script.js", "utf8");
     let testMarkdown = await fs.readFile("tests.md", "utf8");
-
-    // Split the Markdown into chunks based on where JS code blocks start
     let blocks = testMarkdown.split("\`\`\`js");
 
-    // Start at 1, because index 0 is the text before the very first test
     for (let i = 1; i < blocks.length; i++) {
-        // Grab the description from the END of the previous block
-        let description = blocks[i - 1].split("\`\`\`").pop().replace("hints--", "").trim();
+        let description = blocks[i-1].split("\`\`\`").pop().replace("hints--", "").trim();
+        let testCode = blocks[i].split("\`\`\`")[0];
 
-    // Grab the executable test code from the START of the current block
-    let testCode = blocks[i].split("\`\`\`")[0];
+        console.log("\\n📋 " + description);
 
-    console.log("\\n📋 " + description);
-
-    try {
-        eval(userCode + "\\n" + testCode);
-        console.log("   ✅ Passed");
-    } catch (error) {
-        console.log("   ❌ Failed");
-
-        // If the assertion error contains actual/expected values, print them!
-        if ('actual' in error && 'expected' in error) {
-            console.log("      Expected:", error.expected);
-            console.log("      Actual:     ", error.actual);
-        } else {
-            // Fallback for syntax errors or simple boolean assertions
-            console.log("      Error:   ", error.message);
+        try {
+            eval(userCode + "\\n" + testCode);
+            console.log("   ✅ Passed");
+        } catch (e) {
+            console.log("   ❌ Failed");
+            if ('actual' in e && 'expected' in e) {
+                console.log("      Expected:", e.expected);
+                console.log("      Got:     ", e.actual);
+            } else {
+                console.log("      Error:   ", e.message);
+            }
         }
     }
 }
-}
-
 runTests().catch(err => {
     console.error("❌ A top-level error occurred:", err);
     process.exit(1);
@@ -149,7 +148,14 @@ runTests().catch(err => {
 
 // Ensures the target directory exists and triggers individual file writes.
 async function buildChallengeFiles(challengeData) {
-    const {challengeTitle, codeTemplate, htmlTemplate, testRunnerTemplate, testMarkdown, readmeTemplate} = challengeData;
+    const {
+        challengeTitle,
+        codeTemplate,
+        htmlTemplate,
+        testRunnerTemplate,
+        testMarkdown,
+        readmeTemplate
+    } = challengeData;
     const folderName = `Challenge-${challengeTitle}`;
 
     await fs.mkdir(folderName, {recursive: true});
