@@ -86,7 +86,7 @@ function parseChallengeData(markdownText) {
     <h1>${challengeTitle}</h1>
     
     <h2>Description</h2>
-    <div class="markdown-content">${challengeDescription}</div>
+    <div>${challengeDescription}</div>
     
     <script src="script.js"></script>
 </body>
