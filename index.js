@@ -94,7 +94,7 @@ function parseChallengeData(markdownText) {
 
     // Creates the test-runner.js string containing the automated testing logic
     let testRunnerTemplate = `const fs = require('fs').promises;
-const assert = require('assert');
+const assert = require('assert'); // Brings in Node's assertion library
 
 // 🛠️ Polyfill Chai-specific methods so Node's assert understands freeCodeCamp's tests
 assert.isTrue = (val, msg) => assert.strictEqual(val, true, msg);
@@ -108,10 +108,17 @@ assert.lengthOf = (obj, len, msg) => assert.strictEqual(obj.length, len, msg);
 async function runTests() {
     let userCode = await fs.readFile("script.js", "utf8");
     let testMarkdown = await fs.readFile("tests.md", "utf8");
+    
+    // Split the Markdown into chunks based on where JS code blocks start
     let blocks = testMarkdown.split("\`\`\`js");
 
+    // Start at 1, because index 0 is the text before the very first test
     for (let i = 1; i < blocks.length; i++) {
+    
+        // Grab the description from the END of the previous block
         let description = blocks[i-1].split("\`\`\`").pop().replace("hints--", "").trim();
+        
+        // Grab the executable test code from the START of the current block
         let testCode = blocks[i].split("\`\`\`")[0];
 
         console.log("\\n📋 " + description);
@@ -121,10 +128,13 @@ async function runTests() {
             console.log("   ✅ Passed");
         } catch (e) {
             console.log("   ❌ Failed");
+            
+            // If the assertion error contains actual/expected values, print them!
             if ('actual' in e && 'expected' in e) {
                 console.log("      Expected:", e.expected);
                 console.log("      Got:     ", e.actual);
-            } else {
+            } else { 
+                // Fallback for syntax errors or simple boolean assertions
                 console.log("      Error:   ", e.message);
             }
         }
