@@ -60,6 +60,15 @@ function parseChallengeData(markdownText) {
     // Remove anything that isn't a letter, number, space, or hyphen
     let challengeTitle = rawTitle.replace(/[^a-zA-Z0-9\s-]/g, "").trim();
 
+    // Safely find the sections by looking for how they start
+    let rawDescription = sections.find(sec => sec.startsWith("description--")) || "";
+
+    // Clean off the internal freeCodeCamp tags and trim whitespace
+    let challengeDescription = rawDescription.replace("description--", "").trim();
+
+    // Build a beautiful Markdown string for our new README file
+    let readmeTemplate = `# ${challengeTitle}\n\n## Description\n${challengeDescription}\n\n`;
+
     // Isolates the starter JavaScript code found within backticks
     let codeTemplate = sections[4].split("```js")[1].split("```")[0].trim();
 
@@ -75,6 +84,10 @@ function parseChallengeData(markdownText) {
 </head>
 <body>
     <h1>${challengeTitle}</h1>
+    
+    <h2>Description</h2>
+    <div class="markdown-content">${challengeDescription}</div>
+    
     <script src="script.js"></script>
 </body>
 </html>`;
@@ -124,22 +137,28 @@ runTests().catch(err => {
 });`;
 
     // Returns a structured object containing all extracted and generated data
-    return {challengeTitle, codeTemplate, htmlTemplate, testRunnerTemplate, testMarkdown};
+    return {
+        challengeTitle,
+        codeTemplate,
+        htmlTemplate,
+        testRunnerTemplate,
+        testMarkdown,
+        readmeTemplate
+    };
 }
 
 // Ensures the target directory exists and triggers individual file writes.
 async function buildChallengeFiles(challengeData) {
-    const {challengeTitle, codeTemplate, htmlTemplate, testRunnerTemplate, testMarkdown} = challengeData;
+    const {challengeTitle, codeTemplate, htmlTemplate, testRunnerTemplate, testMarkdown, readmeTemplate} = challengeData;
     const folderName = `Challenge-${challengeTitle}`;
 
-    // Creates the folder; { recursive: true } prevents errors if it already exists
     await fs.mkdir(folderName, {recursive: true});
 
-    // Saves each specific file only if it doesn't already exist
     await writeFileSafely(`${folderName}/script.js`, codeTemplate);
     await writeFileSafely(`${folderName}/index.html`, htmlTemplate);
     await writeFileSafely(`${folderName}/test-runner.js`, testRunnerTemplate);
     await writeFileSafely(`${folderName}/tests.md`, testMarkdown);
+    await writeFileSafely(`${folderName}/README.md`, readmeTemplate);
 }
 
 // Checks for file existence using fs.access.
